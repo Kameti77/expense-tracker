@@ -18,13 +18,9 @@ function App() {
   const [editDescription, setEditDescription] = useState('');
   const [showHelp, setShowHelp] = useState(false);
 
-  useEffect(() => {
-    getTransactions().then(setTransactions);
-  }, [])
-
   async function getTransactions() {
     const url = process.env.REACT_APP_API_URL + '/transactions';
-    console.log(url);
+    console.log(url + "working!!!");
     try {
       const response = await fetch(url);
       return await response.json();
@@ -34,6 +30,24 @@ function App() {
     }
 
   }
+
+  useEffect(() => {
+    async function fetchAll() {
+      const url = process.env.REACT_APP_API_URL + '/transactions';
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        setTransactions(data);
+      } catch (err) {
+        console.error('Fetch failed:', err);
+        setTransactions([]);
+      }
+    }
+
+    console.log("working!!!");
+    fetchAll();
+  }, []);
+
 
   function addNewTransaction(e) {
     e.preventDefault();
@@ -140,7 +154,7 @@ function App() {
             role="button"
           />
         </h2>
-         {showHelp && (
+        {showHelp && (
           <div className="help-popup">
             <p>
               💡 To add a transaction, type the amount and item name like <code>+200 Samsung TV</code>. <br /><br />
