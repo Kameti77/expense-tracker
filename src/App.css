@@ -93,6 +93,7 @@ form input:focus {
 
 form div.basic {
   display: flex;
+  flex-direction: column;
   gap: 15px;
   margin-bottom: 15px;
 }

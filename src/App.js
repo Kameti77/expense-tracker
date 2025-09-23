@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import { FaTrash, FaSave, FaEdit, FaTimes, FaInfoCircle } from 'react-icons/fa';
-import { Helmet } from 'react-helmet';
 
 import './App.css';
 
-
 function App() {
   const [name, setName] = useState('');
+  const [priceInput, setPriceInput] = useState('');  // separate field for price
   const [datetime, setDatetime] = useState('');
   const [description, setDescription] = useState('');
-  const [transactions, setTransactions] = useState([]);
+  
+  const [transactions, setTransactions] = useState(() => {
+    const saved = sessionStorage.getItem('transactions');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [hoveredId, setHoveredId] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState('');
@@ -18,126 +22,83 @@ function App() {
   const [editDescription, setEditDescription] = useState('');
   const [showHelp, setShowHelp] = useState(false);
 
-  async function getTransactions() {
-    const url = process.env.REACT_APP_API_URL + '/transactions';
-    console.log(url + "working!!!");
-    try {
-      const response = await fetch(url);
-      return await response.json();
-    } catch (err) {
-      console.error('Fetch failed:', err);
-      return [];
-    }
-
-  }
-
+  // synchronize to sessionStorage whenever transactions change
   useEffect(() => {
-    async function fetchAll() {
-      const url = process.env.REACT_APP_API_URL + '/transactions';
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        setTransactions(data);
-      } catch (err) {
-        console.error('Fetch failed:', err);
-        setTransactions([]);
-      }
-    }
-
-    console.log("working!!!");
-    fetchAll();
-  }, []);
-
+    sessionStorage.setItem('transactions', JSON.stringify(transactions));
+  }, [transactions]);
 
   function addNewTransaction(e) {
     e.preventDefault();
-    const url = process.env.REACT_APP_API_URL + '/transaction';
-    const price = name.split(' ')[0];
-    fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ price, name: name.substring(price.length + 1), description, datetime })
-    }).then(
-      response => response.json())
-      .then(json => {
-        setName('');
-        setDatetime('');
-        setDescription('');
-        getTransactions().then(setTransactions);
-      })
-      .catch(error => {
-        console.error('Fetch error:', error);
-      });
+    // parse price
+    const price = Number(priceInput);
+    if (isNaN(price)) {
+      alert('Please enter a valid number for price');
+      return;
+    }
+    const newTx = {
+      id: Date.now().toString(),
+      price: price,
+      name: name,
+      datetime: datetime,
+      description: description,
+    };
+    setTransactions(prev => [...prev, newTx]);
+    setName('');
+    setPriceInput('');
+    setDatetime('');
+    setDescription('');
   }
 
   function handleDelete(id) {
-    const confirmed = window.confirm('Are you sure you want to delete this transaction?');
-    if (!confirmed) return;
-    console.log('User confirmed delete for ID:', id);
-    const url = process.env.REACT_APP_API_URL + `/transaction/${id}`;
-
-    fetch(url, {
-      method: 'DELETE'
-    })
-      .then(() => {
-        setTransactions(prev => prev.filter(t => t._id !== id));
-      })
-      .catch(err => console.error(err));
+    setTransactions(prev => prev.filter(tx => tx.id !== id));
   }
 
-  function startEditing(transaction) {
-    setEditId(transaction._id);
-    setEditName(transaction.name);
-    setEditPrice(transaction.price);
-    setEditDatetime(transaction.datetime);
-    setEditDescription(transaction.description);
+  function startEditing(tx) {
+    setEditId(tx.id);
+    setEditName(tx.name);
+    setEditPrice(tx.price.toString());
+    setEditDatetime(tx.datetime);
+    setEditDescription(tx.description);
   }
 
   function saveEdit(id) {
-    const updatedTransaction = {
-      price: Number(editPrice),
-      name: editName,
-      datetime: editDatetime,
-      description: editDescription,
-    };
-    const url = process.env.REACT_APP_API_URL + `/transaction/${id}`;
-
-
-    fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedTransaction),
-    })
-      .then(res => res.json())
-      .then(updated => {
-        setTransactions(prev =>
-          prev.map(t => (t._id === id ? updated : t))
-        );
-        setEditId(null);
-        setEditName('');
-        setEditPrice('');
-        setEditDatetime('');
-        setEditDescription('');
+    const price = Number(editPrice);
+    if (isNaN(price)) {
+      alert('Invalid price');
+      return;
+    }
+    setTransactions(prev =>
+      prev.map(tx => {
+        if (tx.id === id) {
+          return {
+            ...tx,
+            price: price,
+            name: editName,
+            datetime: editDatetime,
+            description: editDescription,
+          };
+        }
+        return tx;
       })
-      .catch(err => console.error('Update failed', err));
+    );
+    cancelEdit();
   }
 
   function cancelEdit() {
     setEditId(null);
     setEditName('');
+    setEditPrice('');
     setEditDatetime('');
     setEditDescription('');
   }
 
+  // compute balance
+  const balanceRaw = transactions.reduce((sum, tx) => sum + tx.price, 0);
+  const balanceFormatted = balanceRaw.toFixed(2);
+  const [balanceInt, balanceFraction] = balanceFormatted.split('.');
 
+  const dateOnly = datetime.split("T")[0];
 
-  let balance = 0;
-  for (const transaction of transactions) {
-    balance = balance + transaction.price;
-  }
-  balance = balance.toFixed(2);
-  const fraction = balance.split('.')[1];
-  balance = balance.split('.')[0];
   return (
     <main>
       <header className="app-header">
@@ -148,7 +109,9 @@ function App() {
             onClick={() => setShowHelp(!showHelp)}
             tabIndex={0}
             onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') setShowHelp(!showHelp);
+              if (e.key === 'Enter' || e.key === ' ') {
+                setShowHelp(!showHelp);
+              }
             }}
             aria-label="How to use BalanceBuddy"
             role="button"
@@ -157,45 +120,57 @@ function App() {
         {showHelp && (
           <div className="help-popup">
             <p>
-              💡 To add a transaction, type the amount and item name like <code>+200 Samsung TV</code>. <br /><br />
-              The first number (with + or -) is the price; positive means income, negative means expense.
+              💡 To add a transaction, fill in price, name, datetime, description.
             </p>
             <button className="close-btn" onClick={() => setShowHelp(false)}>Close</button>
           </div>
         )}
       </header>
-      <h1>${balance}<span>{fraction}</span></h1>
 
+      <h1>${balanceInt}<span>.{balanceFraction}</span></h1>
 
       <form onSubmit={addNewTransaction}>
-        <div className='basic'>
-          <input type="text"
+        <div className="basic">
+          <input
+            type="text"
+            value={priceInput}
+            onChange={e => setPriceInput(e.target.value)}
+            placeholder={'+200 or -50'}
+          />
+          <input
+            type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            placeholder={'+200 new samsung tv'} />
+            placeholder="Transaction name"
+          />
           <input
+            type="datetime-local"
             value={datetime}
             onChange={e => setDatetime(e.target.value)}
-            type="datetime-local" />
+          />
         </div>
-        <div className='decription'>
-          <input type="text"
+        <div className="description">
+          <input
+            type="text"
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder={'description'} />
+            placeholder="Description"
+          />
         </div>
         <button type="submit">Add new transaction</button>
       </form>
-      <div className='transactions'>
-        {transactions.length > 0 && transactions.map(transaction => (
+
+      <div className="transactions">
+        {transactions.length === 0 && <p>No transactions yet</p>}
+        {transactions.map(tx => (
           <div
-            key={transaction._id}
+            key={tx.id}
             className="transaction"
-            onMouseEnter={() => setHoveredId(transaction._id)}
+            onMouseEnter={() => setHoveredId(tx.id)}
             onMouseLeave={() => setHoveredId(null)}
           >
             <div className="left">
-              {editId === transaction._id ? (
+              {editId === tx.id ? (
                 <>
                   <input
                     type="number"
@@ -220,36 +195,43 @@ function App() {
                 </>
               ) : (
                 <>
-                  <div className="name">{transaction.name}</div>
-                  <div className="description">{transaction.description}</div>
+                  <div className="name">{tx.name}</div>
+                  <div className="description">{tx.description}</div>
                 </>
-              )}            </div>
+              )}
+            </div>
             <div className="right-container">
               <div className="right">
-                <div className={"price " + (transaction.price < 0 ? 'red' : 'green')}>
-                  {transaction.price}
+                <div className={"price " + (tx.price < 0 ? 'red' : 'green')}>
+                  {tx.price}
                 </div>
-                <div className="date-time">{transaction.datetime}</div>
+                <div className="date-time">{tx.datetime? tx.datetime.split("T")[0] : ""}</div>
               </div>
-              {hoveredId === transaction._id && (
-                editId === transaction._id ? (
+              {hoveredId === tx.id && (
+                editId === tx.id ? (
                   <>
-                    <button className="save-btn" onClick={() => saveEdit(transaction._id)}><FaSave /></button>
-                    <button className="cancel-btn" onClick={() => cancelEdit()}> <FaTimes /></button>
+                    <button className="save-btn" onClick={() => saveEdit(tx.id)}>
+                      <FaSave />
+                    </button>
+                    <button className="cancel-btn" onClick={cancelEdit}>
+                      <FaTimes />
+                    </button>
                   </>
                 ) : (
                   <>
-                    <button className="edit-btn" onClick={() => startEditing(transaction)}> <FaEdit /></button>
-                    <button className="delete-btn" onClick={() => handleDelete(transaction._id)}><FaTrash /></button>
+                    <button className="edit-btn" onClick={() => startEditing(tx)}>
+                      <FaEdit />
+                    </button>
+                    <button className="delete-btn" onClick={() => handleDelete(tx.id)}>
+                      <FaTrash />
+                    </button>
                   </>
                 )
               )}
             </div>
-          </div>)
-        )}
-
+          </div>
+        ))}
       </div>
-
     </main>
   );
 }
