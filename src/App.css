@@ -99,12 +99,12 @@ form div.basic {
 }
 
 form div.basic input.price-input {
-  flex: 1.2;  /* give more space to price */
+  flex: 1.2;  
   min-width: 80px;
 }
 
 form div.basic input.name-input {
-  flex: 2; /* more space to name */
+  flex: 2; 
 }
 
 form button {
