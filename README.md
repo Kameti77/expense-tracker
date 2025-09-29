@@ -39,6 +39,7 @@ npm install
 
 # Start development server
 npm start
+```
 
 # Link to the website
 Check out BalanceBuddy’s demo: [Go to live demo](https://expense-tracker-mm25.onrender.com/)
