@@ -1,70 +1,44 @@
-# Getting Started with Create React App
+# BalanceBuddy
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+BalanceBuddy is a lightweight, in-browser transaction tracker that helps you keep track of incomes and expenses in real time. It is ideal for demos, prototypes, or temporary use — it does **not** persist data across browser sessions, so everything resets when the tab/window is closed.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+- Add income or expense transactions with amount, name, date/time, and description  
+- Edit or delete existing transactions  
+- Displays running balance (sum of all transactions)  
+- Session-based storage: data is stored in the browser session (via `sessionStorage`)  
+- Data is visible only within your tab during that session — different users, devices, or new tabs won’t see your data  
+- Clean, simple UI built with React
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🧩 How It Works (Session Storage Approach)
 
-### `npm test`
+1. On initial load, the app checks `sessionStorage` for a saved list of transactions.  
+2. If found, it loads them into React state; otherwise, it starts empty.  
+3. Whenever you add, edit, or delete a transaction, it updates both state *and* writes the new list back into `sessionStorage`.  
+4. Because `sessionStorage` is scoped per browser tab and cleared when the tab or window closes, the data lives only for that session.  
+5. There is **no backend database usage** in this mode; all data is local in the browser.  
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+This approach ensures that **two different users on different computers will never see each other’s transactions**, because each has their own isolated browser session and local storage.
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 📦 Installation & Usage
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+# Clone the repo
+git clone https://github.com/yourusername/BalanceBuddy.git
+cd BalanceBuddy
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Install dependencies
+npm install
 
-### `npm run eject`
+# Start development server
+npm start
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+# Link to the website
+Check out BalanceBuddy’s demo: [Go to live demo](https://expense-tracker-mm25.onrender.com/)
